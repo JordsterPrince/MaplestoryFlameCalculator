@@ -1,0 +1,30 @@
+e® Arcane Umbra Thief Cape
+
+(Legendary Item)
+Untradable
+
+ATT INCREAS
+
+REGS OO = REQ LUK
+oo =e REO INT
+
+on % ay o2
+BEG! WAR MAGI Bow
+nnER Flor clan fran THIEF PIRATE
+Type: Cape
+
+STR: +140 (35 +105)
+
+DEX : +180 (35 +145)
+
+INT : +140 (35 +105)
+
+LUK : +246 (35 +66 +145)
+MaxHP : +255 (0 +255)
+
+Attack Power: +115 (6 +6 +106)
+Magic Attack: +112 (6 +106)
+Defense: +1333 (450 +383)
+
+All Stats: +6% (0% +69)
+Required Level: -25
