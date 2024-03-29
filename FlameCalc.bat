@@ -340,21 +340,6 @@ for /f "tokens=3" %%a in ('findstr /C:"Average cost:" "%cost_file%"') do (
 rem Remove commas from the extracted average value
 set "averageValue=!averageValue:,=!"
 
-rem Output the extracted average value
-echo Original Average value: !averageValue!
-
-rem Convert averageValue to a number (remove any decimals)
-for /f "tokens=1 delims=." %%n in ("!averageValue!") do set "number=%%n"
-
-rem Check if the number is over 1 billion
-if !number! gtr 1000000000 (
-    set "averageValue=!number!/1000000000"
-    set "averageValue=!averageValue!.!averageValue:~1,2! billion"
-) else if !number! gtr 1000000 (
-    set "averageValue=!number!/1000000"
-    set "averageValue=!averageValue!.!averageValue:~1,2! million"
-)
-
 rem Output the formatted average value
 echo Formatted Average value: !averageValue!
 
@@ -371,3 +356,7 @@ rem Append data to the CSV file
 echo !nameOfItem!,!extracted_number!,!medianValue!,!averageValue!>> "%csv_file%"
 
 endlocal
+
+del temp.txt
+del cost.txt
+del result.txt
