@@ -4,7 +4,7 @@ if exist C:\Users\jords\OneDrive\Documents\Development\FlameCalc\flame_scores.cs
     del flame_scores.csv
 )
 rem -----------------------------------------Set the directory where Snipping Tool saves screenshots
-set "snip_directory=C:\Users\jords\OneDrive\Pictures\Screenshots"
+set "snip_directory=%~dp0\Screenshots"
 
 rem Check if the directory exists
 if not exist "%snip_directory%" (
@@ -98,7 +98,7 @@ for %%F in ("%snip_directory%\*.*") do (
     for %%n in (!numbers1!) do (
         set /a count+=1
     )
-
+    echo ****************************
     rem If there are three numbers, extract the third one
     if !count! equ 3 (
         rem Extract the number between the second and third "+" occurrences
@@ -281,7 +281,7 @@ for %%F in ("%snip_directory%\*.*") do (
     >> "!test_file1!" echo   }^);
     >> "!test_file1!" echo }^);
 
-    rem ------------------------------------------Run Cypress test to generate result.txt which has your cost to get 10 more flame score
+    rem ------------------------------------------Run Cypress test to generate cost.txt which has your cost to get 10 more flame score
     rem Set the path to the Cypress executable (replace with your actual path)
     set "cypress_executable=cypress"
 
@@ -298,9 +298,6 @@ for %%F in ("%snip_directory%\*.*") do (
     if not exist "cost.txt" (
         timeout /t 15 >nul
     )
-    echo *******************************************************
-    echo ^ Your estimated cost for 10 flame score increase is
-    echo *******************************************************
     rem Set the path to the cost file
     set "cost_file=cost.txt"
 
@@ -310,18 +307,20 @@ for %%F in ("%snip_directory%\*.*") do (
     rem Search for lines containing "Median cost:" in cost.txt
     for /f "tokens=3" %%a in ('findstr /C:"Median cost:" "!cost_file!"') do (
         set "medianValue=%%a"
+        echo ****************************
         rem Output the extracted median value
         echo Median value: !medianValue!
         rem Remove commas from the extracted median value
         set "medianValue=!medianValue:,=!"
-
+        echo another thing
         rem Initialize the variable to store the average value
         set "averageValue="
         rem Extract the average value from the cost file
         for /f "tokens=3" %%b in ('findstr /C:"Average cost:" "!cost_file!"') do (
             set "averageValue=%%b"
             rem Output the formatted average value
-            echo Formatted Average value: !averageValue!
+            echo Average value: !averageValue!
+            echo ************************************************************************************************
             rem Remove commas from the extracted average value
             set "averageValue=!averageValue:,=!"
 
@@ -329,14 +328,57 @@ for %%F in ("%snip_directory%\*.*") do (
             rem Set the path to the CSV file
             set "csv_file=C:\Users\jords\OneDrive\Documents\Development\FlameCalc\flame_scores.csv"
             if not exist "!csv_file!" (
-                echo ItemName,FlameScore,Median for 10 FS,Average for 10 FS> "!csv_file!"
+                echo ItemName,FlameScore,Median for 10 FS in Millions,Average for 10 FS in Millions> "!csv_file!"
             )
+            echo !averageValue!
+            rem Round the median and average values using PowerShell
+            for /F %%h in ('powershell -C "[math]::Round(!medianValue! / 1000000, 0)"') do (set "roundedMedian=%%h")
+            for /F %%i in ('powershell -C "[math]::Round(!averageValue! / 1000000, 0)"') do (set "roundedAverage=%%i")
+            echo !roundedAverage!
             rem Append data to the CSV file
-            echo !nameOfItem!,!extracted_number!,!medianValue!,!averageValue!>> "!csv_file!"
+            echo !nameOfItem!,!extracted_number!,!roundedMedian!,!roundedAverage!>> "!csv_file!"
             del temp.txt
             del cost.txt
         )
     )
 )
+
+rem ---------------------------------------------Takes flame_scores.csv and sorts it based off of the median value--Outputs sorted.csv
+rem Define input and output files
+set "input=flame_scores.csv"
+set "output=sorted.csv"
+
+rem Read the data, sort by the third column, and write to temporary file
+(for /F "usebackq skip=1 tokens=*" %%A in ("%input%") do (
+    set "line=%%A"
+    for /F "tokens=1-3 delims=," %%B in ("!line!") do (
+        echo %%D,%%A
+    )
+)) > unsorted.tmp
+
+set "line="
+rem Read the temporary file and process each line
+for /F "tokens=1-5 delims=," %%s in (unsorted.tmp) do (
+    rem Make the first number way bigger to be able to compare them
+    set /A "s=100000000+%%s"
+    rem Check if the array element already exists
+    if defined line[!s:~1!] (
+        set /A "s+=1"
+        rem If the element already exists, append the new line to it
+        set "line[!s:~1!]=%%t,%%u,%%v,%%w,different"
+    ) else (
+        rem If the element doesn't exist, create a new one
+        set "line[!s:~1!]=%%t,%%u,%%v,%%w,something"
+    )
+)
+
+echo ItemName,FlameScore,Median for 10 FS in Millions,Average for 10 FS in Millions > "%output%"
+
+rem Show the array elements
+(for /F "tokens=2 delims==" %%x in ('set line[') do (
+    echo %%x
+)) >> "%output%"
+
+rem Clean up temporary files
 
 endlocal
