@@ -4,7 +4,7 @@ if exist C:\Users\jords\OneDrive\Documents\Development\FlameCalc\flame_scores.cs
     del flame_scores.csv
 )
 rem -----------------------------------------Set the directory where Snipping Tool saves screenshots
-set "snip_directory=%~dp0\Screenshots"
+set "snip_directory=%~dp0Screenshots"
 
 rem Check if the directory exists
 if not exist "%snip_directory%" (
@@ -44,6 +44,29 @@ for %%F in ("%snip_directory%\*.*") do (
 
     rem Output the name of the item
     echo Name of Item: !nameOfItem!
+
+    rem -----------------------------------------Search the text file for REQ LEV
+    rem Search for the line containing "LEV"
+    set "Found=false"
+    set "Level="
+    for /f "delims=" %%a in (temp.txt) do (
+        set "line=%%a"
+        echo !line! | findstr /i "LEV LEY" >nul
+        if not errorlevel 1 (
+            if "!Level!"=="" (
+                set "Level=!line!"
+                set "Found=true"
+            ) else (
+                echo already set the level
+            )
+        )
+    )
+    if "%Found%"=="false" (
+        echo LEV wasnt found in the file for !nameOfItem!
+    )
+
+    rem Output the extracted Level
+    echo Extracted line with "REQ LEV": !Level!
 
     rem -----------------------------------------Search the text file for LUK
     rem Search for the line containing "LUK"
@@ -87,6 +110,29 @@ for %%F in ("%snip_directory%\*.*") do (
     rem Output the extracted line with "All Stat"
     echo Extracted line with "All Stats": !AS!
 
+    rem -----------------------------------------Only get the Level in the REQ LEV line
+    rem Assuming !Level! contains "= REQ LEY: 155 (150-15)"
+    set "justLevel="
+    echo !Level! | findstr /i "(" >nul
+    if not errorlevel 1 (
+        for /f "tokens=3 delims=:(-" %%n in ("!Level!") do (
+            echo !justLevel!
+            set "justLevel=%%n"
+            echo !justLevel!
+        )
+    )
+
+    if "!justLevel!"=="" (
+        for /f "tokens=2 delims=:" %%n in ("!Level!") do (
+            set "justLevel=%%n"
+        )
+    )
+
+    if !justLevel! equ S50 (
+        set "justLevel=250"
+    )
+    echo The Item level is !justLevel!
+
     rem -----------------------------------------Only get the flame score of LUK
     rem Extract the numbers within parentheses
     for /f "tokens=2 delims=()" %%a in ("!LUK!") do (
@@ -95,8 +141,10 @@ for %%F in ("%snip_directory%\*.*") do (
 
     rem Count the number of numbers within parentheses
     set "count=0"
+    set "sum=0"
     for %%n in (!numbers1!) do (
         set /a count+=1
+        set /a sum+=%%n
     )
     echo ****************************
     rem If there are three numbers, extract the third one
@@ -109,12 +157,26 @@ for %%F in ("%snip_directory%\*.*") do (
         rem Remove leading and trailing spaces
         set "justLUK=!justLUK: =!"
 
+        rem Extract the value 225 from !LUK!
+        for /f "tokens=2 delims=:(" %%x in ("!LUK!") do (
+            set "extractedLUK=%%x"
+        )
         echo Extracted LUK: !justLUK!
     ) else (
             echo There are not exactly three numbers in LUK parentheses.
         set "justLUK=0"
     )
-
+    for /f "tokens=2 delims=:(" %%x in ("!LUK!") do (
+        set "extractedLUK=%%x"
+    )
+    set "extractedLUK=!extractedLUK: =!"
+    set "extractedLUK=!extractedLUK:+=!"
+    echo !extractedLUK!
+    echo !sum!
+    if not !extractedLUK! equ !sum! (
+        set /a "justLUK=!extractedLUK! - (!sum! - !justLUK!)"
+        echo Extracted LUK : Beserked worked !justLUK!
+    )
     rem -----------------------------------------Only get the flame score of Att
     rem Extract the numbers within parentheses
     for /f "tokens=2 delims=()" %%a in ("!Att!") do (
@@ -170,17 +232,33 @@ for %%F in ("%snip_directory%\*.*") do (
 
         if !justAllStatsInt! equ 69 (
             set "justAllStats=6"
+        ) else if !justAllStatsInt! equ 65 (
+            set "justAllStats=6"
         ) else if !justAllStatsInt! equ 695 (
             set "justAllStats=6"
+        ) else if !justAllStatsInt! equ 696 (
+            set "justAllStats=6"
         ) else if !justAllStatsInt! equ 59 (
+            set "justAllStats=5"
+        ) else if !justAllStatsInt! equ 55 (
+            set "justAllStats=5"
+        ) else if !justAllStatsInt! equ 596 (
             set "justAllStats=5"
         ) else if !justAllStatsInt! equ 595 (
             set "justAllStats=5"
         ) else if !justAllStatsInt! equ 49 (
             set "justAllStats=4"
+        ) else if !justAllStatsInt! equ 45 (
+            set "justAllStats=4"
+        ) else if !justAllStatsInt! equ 496 (
+            set "justAllStats=4"
         ) else if !justAllStatsInt! equ 495 (
             set "justAllStats=4"
         ) else if !justAllStatsInt! equ 39 (
+            set "justAllStats=3"
+        ) else if !justAllStatsInt! equ 35 (
+            set "justAllStats=3"
+        ) else if !justAllStatsInt! equ 396 (
             set "justAllStats=3"
         ) else if !justAllStatsInt! equ 395 (
             set "justAllStats=3"
@@ -231,7 +309,7 @@ for %%F in ("%snip_directory%\*.*") do (
     set "spec_file=FlameCalc.cy.js"
 
     rem Run Cypress tests
-    start "" cmd /c "npx cypress run --spec "!tests_directory!\!spec_file!" && taskkill"
+    cmd /c "npx cypress run --spec "!tests_directory!\!spec_file!""
 
     rem Wait for result.txt to be generated by Cypress
     if not exist "result.txt" (
@@ -251,7 +329,7 @@ for %%F in ("%snip_directory%\*.*") do (
     set "extracted_number=!extracted_number:*:=!"
     set "extracted_number=!extracted_number: =!"
     echo Your Items Flame Score is: !extracted_number!
-    set /a result=!extracted_number! + 10
+    set /a result=!extracted_number! + 5
     set "justAllStats=0"
 
     del result.txt
@@ -267,9 +345,24 @@ for %%F in ("%snip_directory%\*.*") do (
     >> "!test_file1!" echo   it^('Checks the cost if you want to improve flame score by 10', ^(^) ^=^> {
     >> "!test_file1!" echo     // Visit the website
     >> "!test_file1!" echo     cy.visit^('https://brendonmay.github.io/flameCalculator/'^);
-    >> "!test_file1!" echo     // Wait for the checkbox to be visible and clickable
-    >> "!test_file1!" echo     cy.get^('input[id^="flamescorecheck"]'^).click^(^);
     >> "!test_file1!" echo     cy.wait^(2000^);
+
+    if NOT "!nameOfItem!"=="!nameOfItem:Gollux=!" (
+        echo dealing with Superior
+        echo     cy.get^('input[id^="flame-advantaged"]'^).click^(^); >> "!test_file1!" 
+    )
+    echo !justLevel! | findstr /i "160" >nul
+    if not errorlevel 1 (
+        echo     cy.get^('#item_level'^).select^('160-179'^); >> "!test_file1!" 
+    )
+    echo !justLevel! | findstr /i "200" >nul
+    if not errorlevel 1 (
+        echo     cy.get^('#item_level'^).select^('200-229'^); >> "!test_file1!" 
+    )
+    echo !justLevel! | findstr /i "250" >nul
+    if not errorlevel 1 (
+        echo     cy.get^('#item_level'^).select^('250+'^); >> "!test_file1!" 
+    )
     >> "!test_file1!" echo     cy.get^('.ml-2 ^> span'^).click^(^);
     >> "!test_file1!" echo     cy.get^('#desired_stat_armor'^).click^(^).clear^(^).type^('!result!'^);
     >> "!test_file1!" echo     cy.get^('#calculateButton'^).click^(^);
@@ -292,11 +385,11 @@ for %%F in ("%snip_directory%\*.*") do (
     set "spec_file=FlameCost.cy.js"
 
     rem Run Cypress tests
-    start "" cmd /c "npx cypress run --spec "!tests_directory!\!spec_file!" && taskkill"
+    cmd /c "npx cypress run --spec "!tests_directory!\!spec_file!""
 
     rem Wait for cost.txt to be generated by Cypress
     if not exist "cost.txt" (
-        timeout /t 15 >nul
+        timeout /t 20 >nul
     )
     rem Set the path to the cost file
     set "cost_file=cost.txt"
@@ -342,43 +435,5 @@ for %%F in ("%snip_directory%\*.*") do (
         )
     )
 )
-
-rem ---------------------------------------------Takes flame_scores.csv and sorts it based off of the median value--Outputs sorted.csv
-rem Define input and output files
-set "input=flame_scores.csv"
-set "output=sorted.csv"
-
-rem Read the data, sort by the third column, and write to temporary file
-(for /F "usebackq skip=1 tokens=*" %%A in ("%input%") do (
-    set "line=%%A"
-    for /F "tokens=1-3 delims=," %%B in ("!line!") do (
-        echo %%D,%%A
-    )
-)) > unsorted.tmp
-
-set "line="
-rem Read the temporary file and process each line
-for /F "tokens=1-5 delims=," %%s in (unsorted.tmp) do (
-    rem Make the first number way bigger to be able to compare them
-    set /A "s=100000000+%%s"
-    rem Check if the array element already exists
-    if defined line[!s:~1!] (
-        set /A "s+=1"
-        rem If the element already exists, append the new line to it
-        set "line[!s:~1!]=%%t,%%u,%%v,%%w,different"
-    ) else (
-        rem If the element doesn't exist, create a new one
-        set "line[!s:~1!]=%%t,%%u,%%v,%%w,something"
-    )
-)
-
-echo ItemName,FlameScore,Median for 10 FS in Millions,Average for 10 FS in Millions > "%output%"
-
-rem Show the array elements
-(for /F "tokens=2 delims==" %%x in ('set line[') do (
-    echo %%x
-)) >> "%output%"
-
-rem Clean up temporary files
 
 endlocal
